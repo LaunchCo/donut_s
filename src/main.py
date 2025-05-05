@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Literal
 from transformers import (
@@ -47,10 +47,8 @@ gen_config = GenerationConfig(
 class InferenceRequest(BaseModel):
     mode: Literal["donut", "text"]
     instruction: str
-    output_format: Optional[str] = Query(
-        None,
-        description="Hint for the shape of the output (e.g., 'json', 'plain')"
-    )
+    # Removed Query for Pydantic schema; output_format can be used in future if needed.
+    output_format: Optional[str] = None
 
 class InferenceResponse(BaseModel):
     result: str
@@ -83,13 +81,10 @@ async def inference(
     # --- Text Mode ---
     elif req.mode == "text":
         # Tokenize and move to device
-        inputs = tokenizer(
-            req.instruction,
-            return_tensors="pt"
-        )
+        inputs = tokenizer(req.instruction, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         # Generate with config
-generate_kwargs = gen_config.to_dict()
+        generate_kwargs = gen_config.to_dict()
         outputs = text_model.generate(
             **inputs,
             **generate_kwargs
@@ -100,6 +95,8 @@ generate_kwargs = gen_config.to_dict()
     else:
         raise HTTPException(status_code=400, detail="Unsupported mode. Choose 'donut' or 'text'.")
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=9000)
