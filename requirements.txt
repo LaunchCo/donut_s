@@ -4,3 +4,4 @@ transformers~=4.51.3
 torch~=2.7.0
 torchvision~=0.22.0
 pillow~=11.2.1
+pydantic~=2.11.4
