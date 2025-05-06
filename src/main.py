@@ -53,6 +53,7 @@ async def inference(
         pixel_values.to(device),
         decoder_input_ids=decoder_input_ids.to(device),
         max_length=model.decoder.config.max_position_embeddings,
+        max_new_tokens=512,
         pad_token_id=processor.tokenizer.pad_token_id,
         eos_token_id=processor.tokenizer.eos_token_id,
         use_cache=True,
