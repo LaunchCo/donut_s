@@ -9,12 +9,11 @@ import torch
 app = FastAPI(title="Donut Inference API")
 
 # === Device Setup ===
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+processor = DonutProcessor.from_pretrained("naver-clova-ix/donut-base-finetuned-rvlcdip")
+model = VisionEncoderDecoderModel.from_pretrained("naver-clova-ix/donut-base-finetuned-rvlcdip")
 
-# === Model Initialization (using fine-tuned Donut model) ===
-DONUT_MODEL_ID = "naver-clova-ix/donut-base-finetuned-rvlcdip"
-processor = DonutProcessor.from_pretrained(DONUT_MODEL_ID)
-model = VisionEncoderDecoderModel.from_pretrained(DONUT_MODEL_ID)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
 # === Request / Response Schemas ===
@@ -64,6 +63,7 @@ async def inference(file: UploadFile = File(...), req: InferenceRequest = None):
     # Remove the first task start token using regex.
     sequence = re.sub(r"<.*?>", "", sequence, count=1).strip()
     result = processor.token2json(sequence)
+    print(str(result))
 
     return InferenceResponse(result=str(result))
 
