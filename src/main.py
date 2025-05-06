@@ -19,7 +19,7 @@ parser.add_argument(
     required=True,
     help=(
         "Model name: for donut choose one of [base, rvlcdip, cord-v2, docvqa, proto]; "
-        "for pix2struct choose one of [base, docvqa, ocrvqa-large]"
+        "for pix2struct choose one of [base, large docvqa, docvqa-large, ocrvqa-large, ocrvqa-base, infographics-vqa-base, infographics-vqa-large, chartqa-base, widget-captioning-base, widget-captioning-large, ai2d-base, ai2d-large, screen2words-base, screen2words-large, textcaps-base, textcaps-large]"
     ),
 )
 args = parser.parse_args()
@@ -39,18 +39,34 @@ if use_donut:
     if not model_id:
         raise ValueError(f"Unknown Donut model name: '{args.model_name}'")
     from transformers import DonutProcessor, VisionEncoderDecoderModel
+
     processor = DonutProcessor.from_pretrained(model_id)
     model = VisionEncoderDecoderModel.from_pretrained(model_id)
 else:
     p2s_mapping = {
         "base": "google/pix2struct-base",
+        "large": "google/pix2struct-large",
+        "screen2words-base": "google/pix2struct-screen2words-base",
+        "screen2words-large": "google/pix2struct-screen2words-large",
+        "textcaps-base": "google/pix2struct-textcaps-base",
+        "textcaps-large": "google/pix2struct-textcaps-large",
+        "widget-captioning-base": "google/pix2struct-widget-captioning-base",
+        "widget-captioning-large": "google/pix2struct-widget-captioning-large",
+        "ai2d-base": "google/pix2struct-ai2d-base",
+        "ai2d-large": "google/pix2struct-ai2d-large",
+        "chartqa-base": "google/pix2struct-chartqa-base",
         "docvqa": "google/pix2struct-docvqa-base",
+        "docvqa-large": "google/pix2struct-docvqa-large",
+        "ocrvqa-base": "google/pix2struct-ocrvqa-base",
         "ocrvqa-large": "google/pix2struct-ocrvqa-large",
+        "infographics-vqa-base": "google/pix2struct-infographics-vqa-base",
+        "infographics-vqa-large": "google/pix2struct-infographics-vqa-large",
     }
     model_id = p2s_mapping.get(args.model_name)
     if not model_id:
         raise ValueError(f"Unknown Pix2Struct model name: '{args.model_name}'")
     from transformers import Pix2StructProcessor, Pix2StructForConditionalGeneration
+
     processor = Pix2StructProcessor.from_pretrained(model_id)
     model = Pix2StructForConditionalGeneration.from_pretrained(model_id)
 
@@ -61,18 +77,21 @@ model.to(device)
 # === FastAPI Setup ===
 app = FastAPI(title=f"{args.framework.capitalize()} Inference API ({args.model_name})")
 
+
 # === Request / Response Schemas ===
 class InferenceRequest(BaseModel):
     instruction: str = ""
 
+
 class InferenceResponse(BaseModel):
     result: str
+
 
 # === Inference Endpoint ===
 @app.post("/inference", response_model=InferenceResponse)
 async def inference(
-    file: UploadFile = File(...),
-    instruction: str = Form("<s_rvlcdip>"),
+        file: UploadFile = File(...),
+        instruction: str = Form("<s_rvlcdip>"),
 ):
     # Validate file
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -104,9 +123,7 @@ async def inference(
             return_dict_in_generate=True,
         )
         sequence = processor.batch_decode(outputs.sequences, skip_special_tokens=True)[0]
-        # Clean up tags
         text = re.sub(r"<.*?>", "", sequence).strip()
-        # Try JSON parsing for Donut
         try:
             result = processor.token2json(sequence)
         except Exception:
@@ -124,7 +141,9 @@ async def inference(
 
     return InferenceResponse(result=result)
 
+
 # === Run Server ===
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=9000)
