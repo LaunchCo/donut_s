@@ -44,7 +44,7 @@ if use_donut:
 else:
     p2s_mapping = {
         "base": "google/pix2struct-base",
-        "docvqa": "google/pix2struct-docvqa",
+        "docvqa": "google/pix2struct-docvqa-base",
     }
     model_id = p2s_mapping.get(args.model_name)
     if not model_id:
