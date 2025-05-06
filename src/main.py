@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from pydantic import BaseModel
 from transformers import DonutProcessor, VisionEncoderDecoderModel
 from PIL import Image
@@ -26,7 +26,10 @@ class InferenceResponse(BaseModel):
 
 # === Endpoint ===
 @app.post("/inference", response_model=InferenceResponse)
-async def inference(file: UploadFile = File(...), req: InferenceRequest = None):
+async def inference(
+    file: UploadFile = File(...),
+    instruction: str = Form("<s_rvlcdip>")
+):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="An image file is required.")
 
@@ -37,7 +40,7 @@ async def inference(file: UploadFile = File(...), req: InferenceRequest = None):
         raise HTTPException(status_code=400, detail="Cannot open image file.")
 
     # Use the provided instruction or the default "<s_rvlcdip>".
-    task_prompt = req.instruction if req is not None else "<s_rvlcdip>"
+    task_prompt = instruction
 
     # Prepare decoder input IDs from task prompt.
     decoder_input_ids = processor.tokenizer(task_prompt, add_special_tokens=False, return_tensors="pt").input_ids
