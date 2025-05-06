@@ -43,15 +43,16 @@ async def inference(
     task_prompt = instruction
 
     # Prepare decoder input IDs from task prompt.
-    decoder_input_ids = processor.tokenizer(task_prompt, add_special_tokens=False, return_tensors="pt").input_ids
+    decoder_input_ids = processor.tokenizer(task_prompt, add_special_tokens=False, return_tensors="pt").input_ids.to(device)
 
     # Process the image.
     pixel_values = processor(image, return_tensors="pt").pixel_values
-
+    print("Max token ID in decoder input:", decoder_input_ids.max().item())
+    print("Decoder vocab size:", model.config.decoder.vocab_size)
     # Generate output using the model.
     outputs = model.generate(
         pixel_values.to(device),
-        decoder_input_ids=decoder_input_ids.to(device),
+        decoder_input_ids=decoder_input_ids,
         max_length=model.decoder.config.max_position_embeddings,
         max_new_tokens=256,
         pad_token_id=processor.tokenizer.pad_token_id,
