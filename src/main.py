@@ -10,8 +10,8 @@ app = FastAPI(title="Donut Inference API")
 
 # === Device Setup ===
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-processor = DonutProcessor.from_pretrained("naver-clova-ix/donut-base")
-model = VisionEncoderDecoderModel.from_pretrained("naver-clova-ix/donut-base")
+processor = DonutProcessor.from_pretrained("naver-clova-ix/donut-base-finetuned-cord-v2")
+model = VisionEncoderDecoderModel.from_pretrained("naver-clova-ix/donut-base-finetuned-cord-v2")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
@@ -67,6 +67,7 @@ async def inference(
     sequence = sequence.replace(processor.tokenizer.eos_token, "").replace(processor.tokenizer.pad_token, "")
     # Remove the first task start token using regex.
     sequence = re.sub(r"<.*?>", "", sequence, count=1).strip()
+    print("Raw output:", repr(sequence))
     result = processor.token2json(sequence)
     print(str(result))
 
