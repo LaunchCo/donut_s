@@ -19,7 +19,7 @@ parser.add_argument(
     required=True,
     help=(
         "Model name: for donut choose one of [base, rvlcdip, cord-v2, docvqa, proto]; "
-        "for pix2struct choose one of [base, docvqa]"
+        "for pix2struct choose one of [base, docvqa, ocrvqa-large]"
     ),
 )
 args = parser.parse_args()
@@ -45,6 +45,7 @@ else:
     p2s_mapping = {
         "base": "google/pix2struct-base",
         "docvqa": "google/pix2struct-docvqa-base",
+        "ocrvqa-large": "google/pix2struct-ocrvqa-large",
     }
     model_id = p2s_mapping.get(args.model_name)
     if not model_id:
