@@ -7,3 +7,4 @@ pillow~=11.2.1
 pydantic~=2.11.4
 protobuf~=6.30.2
 sentencepiece~=0.2.0
+python-multipart~=0.0.20
