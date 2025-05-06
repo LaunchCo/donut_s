@@ -10,9 +10,9 @@ import torch
 parser = argparse.ArgumentParser(description="Inference server for Donut or Pix2Struct models")
 parser.add_argument(
     "--framework",
-    choices=["donut", "pix2struct"],
+    choices=["donut", "pix2struct", "qwen"],
     required=True,
-    help="Choose 'donut' or 'pix2struct' model family",
+    help="Choose 'donut', 'pix2struct' or 'qwen' model family",
 )
 parser.add_argument(
     "--model-name",
@@ -26,6 +26,8 @@ args = parser.parse_args()
 
 # === Model Selection ===
 use_donut = args.framework == "donut"
+use_pix2struct = args.framework == "pix2struct"
+use_qwen = args.framework == "qwen"
 model_id = None
 if use_donut:
     donut_mapping = {
@@ -42,7 +44,7 @@ if use_donut:
 
     processor = DonutProcessor.from_pretrained(model_id)
     model = VisionEncoderDecoderModel.from_pretrained(model_id)
-else:
+elif use_pix2struct:
     p2s_mapping = {
         "base": "google/pix2struct-base",
         "large": "google/pix2struct-large",
@@ -69,13 +71,32 @@ else:
 
     processor = Pix2StructProcessor.from_pretrained(model_id)
     model = Pix2StructForConditionalGeneration.from_pretrained(model_id)
+elif use_qwen:
+    if args.model_name != "vl-3b":
+        raise ValueError("Currently only Qwen2.5-VL-3B-Instruct is supported.")
+
+    model_id = "Qwen/Qwen2.5-VL-3B-Instruct"
+    from transformers import AutoProcessor, AutoModelForVision2Seq
+
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = AutoModelForVision2Seq.from_pretrained(model_id)
+    model = model.to(dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
+
+else:
+    raise ValueError(f"Unknown framework: '{args.framework}'")
 
 # === Device Setup ===
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
 # === FastAPI Setup ===
-app = FastAPI(title=f"{args.framework.capitalize()} Inference API ({args.model_name})")
+pretty_name = {
+    "donut": "Donut",
+    "pix2struct": "Pix2Struct",
+    "qwen": "Qwen2.5-VL",
+}.get(args.framework, args.framework)
+
+app = FastAPI(title=f"{pretty_name} Inference API ({args.model_name})")
 
 
 # === Request / Response Schemas ===
@@ -128,7 +149,7 @@ async def inference(
             result = processor.token2json(sequence)
         except Exception:
             result = text
-    else:
+    elif use_pix2struct:
         # Pix2Struct inference
         inputs = processor(images=image, text=instruction, return_tensors="pt").to(device)
         outputs = model.generate(
@@ -137,7 +158,18 @@ async def inference(
             return_dict_in_generate=True,
         )
         sequence = processor.batch_decode(outputs.sequences, skip_special_tokens=True)[0].strip()
+        print(sequence)
         result = sequence
+    elif use_qwen:
+        inputs = processor(images=image, text=instruction, return_tensors="pt").to(device)
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=512,
+            return_dict_in_generate=True,
+        )
+        result = processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
+    else:
+        raise ValueError(f"Unknown framework: '{args.framework}'")
 
     return InferenceResponse(result=result)
 
