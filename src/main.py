@@ -10,8 +10,8 @@ app = FastAPI(title="Donut Inference API")
 
 # === Device Setup ===
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-processor = DonutProcessor.from_pretrained("naver-clova-ix/donut-base-finetuned-cord-v2")
-model = VisionEncoderDecoderModel.from_pretrained("naver-clova-ix/donut-base-finetuned-cord-v2")
+processor = DonutProcessor.from_pretrained("naver-clova-ix/donut-base-finetuned-docvqa")
+model = VisionEncoderDecoderModel.from_pretrained("naver-clova-ix/donut-base-finetuned-docvqa")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
