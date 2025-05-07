@@ -84,6 +84,7 @@ elif use_qwen:
         model_id,
         # device_map="auto",
         torch_dtype=torch.float16,
+
     )
 
 else:
@@ -166,7 +167,11 @@ async def inference(
         print(sequence)
         result = sequence
     elif use_qwen:
-        inputs = processor(images=image, text=instruction, return_tensors="pt").to(device)
+        inst = """<|user|>
+<image>
+List all of the ingredients.
+<|assistant|>"""
+        inputs = processor(images=image, text=inst, return_tensors="pt").to(device)
         outputs = model.generate(
             **inputs,
             # max_new_tokens=512,
