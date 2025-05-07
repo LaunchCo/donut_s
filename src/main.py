@@ -82,7 +82,7 @@ elif use_qwen:
 
     model = AutoModelForVision2Seq.from_pretrained(
         model_id,
-        device_map="auto",
+        # device_map="auto",
         torch_dtype=torch.float16,
     )
 
@@ -90,9 +90,9 @@ else:
     raise ValueError(f"Unknown framework: '{args.framework}'")
 
 # === Device Setup ===
-if not use_qwen:
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model.to(device)
+# if not use_qwen:
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model.to(device)
 
 # === FastAPI Setup ===
 pretty_name = {
@@ -166,7 +166,7 @@ async def inference(
         print(sequence)
         result = sequence
     elif use_qwen:
-        inputs = processor(images=image, text=instruction, return_tensors="pt").to("cuda")
+        inputs = processor(images=image, text=instruction, return_tensors="pt").to(device)
         outputs = model.generate(
             **inputs,
             # max_new_tokens=512,
