@@ -167,12 +167,14 @@ async def inference(
         result = sequence
     elif use_qwen:
         inputs = processor(images=image, text=instruction, return_tensors="pt")
+        if "pixel_values" in inputs:
+            inputs["pixel_values"] = inputs["pixel_values"].to("cuda")
         outputs = model.generate(
             **inputs,
-            max_new_tokens=512,
+            # max_new_tokens=512,
             # return_dict_in_generate=True,
         )
-        result = processor.batch_decode(outputs, skip_special_tokens=True)[0]
+        result = processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
     else:
         raise ValueError(f"Unknown framework: '{args.framework}'")
 
