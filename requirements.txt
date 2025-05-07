@@ -8,5 +8,3 @@ pydantic~=2.11.4
 protobuf~=6.30.2
 sentencepiece~=0.2.0
 python-multipart~=0.0.20
-bitsandbytes~=0.42.0
-accelerate~=1.6.0
