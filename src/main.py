@@ -166,9 +166,7 @@ async def inference(
         print(sequence)
         result = sequence
     elif use_qwen:
-        inputs = processor(images=image, text=instruction, return_tensors="pt")
-        if "pixel_values" in inputs:
-            inputs["pixel_values"] = inputs["pixel_values"].to("cuda")
+        inputs = processor(images=image, text=instruction, return_tensors="pt").to("cuda")
         outputs = model.generate(
             **inputs,
             # max_new_tokens=512,
