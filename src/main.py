@@ -89,7 +89,7 @@ elif use_qwen:
         bnb_4bit_quant_type="nf4",
     )
 
-    model = AutoModelForCausalLM.from_pretrained(
+    model = AutoModelForVision2Seq.from_pretrained(
         model_id,
         quantization_config=bnb_config,
         device_map="auto",
