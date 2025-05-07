@@ -5,6 +5,7 @@ from PIL import Image
 import io
 import re
 import torch
+from qwen_vl_utils import process_vision_info
 
 # === CLI Arguments ===
 parser = argparse.ArgumentParser(description="Inference server for Donut or Pix2Struct models")
@@ -76,16 +77,15 @@ elif use_qwen:
         raise ValueError("Currently only Qwen2.5-VL-3B-Instruct is supported.")
 
     model_id = "Qwen/Qwen2.5-VL-3B-Instruct"
-    from transformers import AutoProcessor, AutoModelForVision2Seq
+    from transformers import AutoProcessor, AutoModelForVision2Seq, Qwen2_5_VLProcessor, \
+        Qwen2_5_VLForConditionalGeneration
 
-    processor = AutoProcessor.from_pretrained(model_id)
-
-    model = AutoModelForVision2Seq.from_pretrained(
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         model_id,
-        # device_map="auto",
         torch_dtype=torch.float16,
-
+        # device_map="auto"
     )
+    processor = AutoProcessor.from_pretrained(model_id)
 
 else:
     raise ValueError(f"Unknown framework: '{args.framework}'")
@@ -167,17 +167,38 @@ async def inference(
         print(sequence)
         result = sequence
     elif use_qwen:
-        inst = """<|user|>
-<image>
-List all of the ingredients.
-<|assistant|>"""
-        inputs = processor(images=image, text=inst, return_tensors="pt").to(device)
-        outputs = model.generate(
-            **inputs,
-            # max_new_tokens=512,
-            # return_dict_in_generate=True,
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "image": image,
+                    },
+                    {"type": "text", "text": instruction},
+                ],
+            }
+        ]
+        text = processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
         )
-        result = processor.batch_decode(outputs, skip_special_tokens=True)[0].strip()
+        image_inputs, video_inputs = process_vision_info(messages)
+        inputs = processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+        ).to(device)
+
+        generated_ids = model.generate(**inputs, max_new_tokens=128)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+        result = output_text
     else:
         raise ValueError(f"Unknown framework: '{args.framework}'")
 
