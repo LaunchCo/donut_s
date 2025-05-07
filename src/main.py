@@ -198,7 +198,7 @@ async def inference(
         output_text = processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )
-        result = output_text
+        result = output_text[0]
     else:
         raise ValueError(f"Unknown framework: '{args.framework}'")
 
