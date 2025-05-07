@@ -79,7 +79,13 @@ elif use_qwen:
     from transformers import AutoProcessor, AutoModelForVision2Seq
 
     processor = AutoProcessor.from_pretrained(model_id)
-    model = AutoModelForVision2Seq.from_pretrained(model_id)
+    model = AutoModelForVision2Seq.from_pretrained(
+        model_id,
+        load_in_8bit=True,
+        device_map="auto",
+        torch_dtype="auto",
+        low_cpu_mem_usage=True,
+    )
     model = model.to(dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
 
 else:
