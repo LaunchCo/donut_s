@@ -77,23 +77,13 @@ elif use_qwen:
 
     model_id = "Qwen/Qwen2.5-VL-3B-Instruct"
     from transformers import AutoProcessor, AutoModelForVision2Seq
-    from transformers import AutoModelForCausalLM
-    from transformers import BitsAndBytesConfig
 
     processor = AutoProcessor.from_pretrained(model_id)
 
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.float16,  # or bfloat16 if supported
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-    )
-
     model = AutoModelForVision2Seq.from_pretrained(
         model_id,
-        quantization_config=bnb_config,
         device_map="auto",
-        trust_remote_code=True,
+        torch_dtype=torch.float16,
     )
 
 else:
